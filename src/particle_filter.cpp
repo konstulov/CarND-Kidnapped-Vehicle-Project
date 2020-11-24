@@ -27,7 +27,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
    * and their uncertainties from GPS) and all weights to 1.
    * Add random Gaussian noise to each particle.
    */
-  num_particles = 300;
+  num_particles = 30;
   std::default_random_engine generator;
   std::normal_distribution<double> dist_x(x, std[0]);
   std::normal_distribution<double> dist_y(y, std[1]);
@@ -44,7 +44,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
     Particle p;
     p.x = dist_x(generator);
     p.y = dist_y(generator);
-    p.theta = dist_theta(generator);
+    p.theta = fmod(dist_theta(generator), 2.0 * M_PI);
     p.weight = 1;
     particles[i] = p;
     weights[i] = p.weight;
@@ -58,17 +58,19 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
    * Add measurements to each particle and add random Gaussian noise.
    */
   std::default_random_engine gen;
+  std::normal_distribution<double> dist_yaw(yaw_rate, 0.0001);
   std::normal_distribution<double> dist_x(0, std_pos[0]);
   std::normal_distribution<double> dist_y(0, std_pos[1]);
   std::normal_distribution<double> dist_theta(0, std_pos[2]);
   // scale the noise (hand-tuned parameter)
   double scale = 0.1;
+  yaw_rate = dist_yaw(gen);
   for (int i=0; i<num_particles; i++) {
     double theta = particles[i].theta;
-    double theta_new = theta + yaw_rate * delta_t;
+    double theta_new = fmod(theta + yaw_rate * delta_t, 2.0 * M_PI);
     particles[i].x += velocity / yaw_rate * (sin(theta_new) - sin(theta)) + scale * dist_x(gen);
     particles[i].y += velocity / yaw_rate * (cos(theta) - cos(theta_new)) + scale * dist_y(gen);
-    particles[i].theta = theta_new + scale * dist_theta(gen);
+    particles[i].theta = fmod(theta_new + scale * dist_theta(gen), 2.0 * M_PI);
   }
 }
 
